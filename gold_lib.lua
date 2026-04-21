@@ -1,10 +1,38 @@
-local GoldLib = {} -- Cria a tabela da biblioteca
-
 local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
+
 local LocalPlayer = Players.LocalPlayer
 local GuiParent = CoreGui:FindFirstChild("RobloxGui") or LocalPlayer:WaitForChild("PlayerGui")
+
+-- Detector de Executor
+local function GetExecutor()
+    if identifyexecutor then return identifyexecutor() end
+    if getexecutorname then return getexecutorname() end
+    return "Unknown"
+end
+
+-- Lógica do Discord (Clipboard + Invite)
+local function JoinDiscord()
+    local inviteCode = "Q9hFWuVGPJ"
+    if setclipboard then setclipboard("https://discord.gg/"..inviteCode) end
+    
+    local httpRequest = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+    if httpRequest then
+        pcall(function()
+            httpRequest({
+                Url = "http://127.0.0.1:6463/rpc?v=1",
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json", ["Origin"] = "https://discord.com"},
+                Body = game:GetService("HttpService"):JSONEncode({
+                    cmd = "INVITE_BROWSER",
+                    args = { code = inviteCode },
+                    nonce = game:GetService("HttpService"):GenerateGUID(false)
+                }),
+            })
+        end)
+    end
+end
 
 local NotifyGui = GuiParent:FindFirstChild("GoldNotifyGui")
 if not NotifyGui then
@@ -14,11 +42,11 @@ if not NotifyGui then
     NotifyGui.Parent = GuiParent
 end
 
--- A função agora faz parte da GoldLib
-function GoldLib:Notify(title, message, duration, customIcon)
+local function SendNotification(title, message, duration, customIcon)
     local assetId = customIcon or "rbxthumb://type=Asset&id=9267155972&w=150&h=150"
-    local spacing = 75
+    local spacing = 75 -- Espaço entre notificações
 
+    -- Quando uma nova chega, as velhas sobem
     for _, existingFrame in ipairs(NotifyGui:GetChildren()) do
         if existingFrame:IsA("Frame") then
             TweenService:Create(existingFrame, TweenInfo.new(0.3), {
@@ -28,10 +56,12 @@ function GoldLib:Notify(title, message, duration, customIcon)
     end
 
     local NotifyFrame = Instance.new("Frame")
+    NotifyFrame.Name = "NotifyFrame"
     NotifyFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     NotifyFrame.Size = UDim2.new(0, 280, 0, 65)
     NotifyFrame.Position = UDim2.new(1, 30, 1, -100)
     NotifyFrame.Parent = NotifyGui
+
     Instance.new("UICorner", NotifyFrame).CornerRadius = UDim.new(0, 10)
     local Stroke = Instance.new("UIStroke", NotifyFrame)
     Stroke.Color = Color3.fromRGB(45, 45, 45)
@@ -64,10 +94,13 @@ function GoldLib:Notify(title, message, duration, customIcon)
     TextLabel.TextSize = 11
     TextLabel.TextXAlignment = Enum.TextXAlignment.Left
 
+    -- FUNÇÃO PARA FECHAR E REORGANIZAR
     local function Exit()
+        -- Antes de destruir, avisa as que estão acima para descerem
         local currentY = NotifyFrame.Position.Y.Offset
         for _, otherFrame in ipairs(NotifyGui:GetChildren()) do
             if otherFrame:IsA("Frame") and otherFrame ~= NotifyFrame then
+                -- Se a outra notificação estiver acima desta (Y menor)
                 if otherFrame.Position.Y.Offset < currentY then
                     TweenService:Create(otherFrame, TweenInfo.new(0.3), {
                         Position = otherFrame.Position + UDim2.new(0, 0, 0, spacing)
@@ -75,9 +108,12 @@ function GoldLib:Notify(title, message, duration, customIcon)
                 end
             end
         end
-        local t = TweenService:Create(NotifyFrame, TweenInfo.new(0.4), {Position = NotifyFrame.Position + UDim2.new(0, 350, 0, 0)})
-        t:Play()
-        t.Completed:Connect(function() NotifyFrame:Destroy() end)
+
+        local tweenOut = TweenService:Create(NotifyFrame, TweenInfo.new(0.4), {
+            Position = NotifyFrame.Position + UDim2.new(0, 350, 0, 0)
+        })
+        tweenOut:Play()
+        tweenOut.Completed:Connect(function() NotifyFrame:Destroy() end)
     end
 
     local CloseBtn = Instance.new("TextButton", NotifyFrame)
@@ -89,8 +125,22 @@ function GoldLib:Notify(title, message, duration, customIcon)
     CloseBtn.TextSize = 22
     CloseBtn.MouseButton1Click:Connect(Exit)
 
-    TweenService:Create(NotifyFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(1, -300, 1, -100)}):Play()
+    TweenService:Create(NotifyFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Position = UDim2.new(1, -300, 1, -100)
+    }):Play()
+
     task.delay(duration or 5, function() if NotifyFrame.Parent then Exit() end end)
 end
 
-return GoldLib -- Importante: permite que outros scripts usem a Lib
+-- EXECUÇÃO
+local Executor = GetExecutor()
+local Avatar = "rbxthumb://type=AvatarHeadShot&id="..LocalPlayer.UserId.."&w=150&h=150"
+
+SendNotification("gold™", "game found, loading script...", 5)
+JoinDiscord()
+
+task.wait(0.5)
+SendNotification("USER INFO", "User: "..LocalPlayer.Name.." | ID: "..LocalPlayer.UserId, 6, Avatar)
+
+task.wait(0.5)
+SendNotification("EXECUTOR INFO", "Running on: "..Executor, 7)
