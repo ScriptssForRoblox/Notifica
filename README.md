@@ -18,7 +18,7 @@ Biblioteca modular de UI para scripts Roblox. Composta por 3 módulos independen
 
 ### Carregar
 ```lua
-local Notify = loadstring(game:HttpGet("[URL_DO_NOTIFICATION](https://raw.githubusercontent.com/ScriptssForRoblox/Notifica/refs/heads/main/Notification.lua)"))()
+local Notify = loadstring(game:HttpGet("https://raw.githubusercontent.com/ScriptssForRoblox/Notifica/refs/heads/main/Notification.lua)"))()
 ```
 
 ### Enviar notificação
